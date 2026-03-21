@@ -1,18 +1,22 @@
+//core React imports
 import React, { useState, useRef, useEffect } from 'react';
+//icons from lucide-react
 import {
   MessageSquare, Send, Bot, User, X, Minus,
   Wrench, Smartphone, ShieldCheck, Banknote, Zap, Paperclip, Smile
 } from 'lucide-react';
+//Animation Library
 import { motion, AnimatePresence } from 'framer-motion';
-import { cn } from './lib/utils'; // 如果 App.tsx 在 src 根目录，这个写法是对的
+//Custom utility functions(clsx and tailwind merge) for Dynamically merge CSS class names
+import { cn } from './lib/utils'; 
 
-
-// 1. 抽离时间工具函数，解决重复调用问题
+// get current time in HH:mm format for solve multiple time calling
 const getNow = () => new Date().toLocaleTimeString([], {
   hour: '2-digit',
   minute: '2-digit',
   hour12: false
 });
+//TypeScript interface for message structure, defining the shape of message objects used in the app
 interface Message {
   id: string;
   type: 'user' | 'ai';
@@ -20,8 +24,7 @@ interface Message {
   timestamp: string;
   hasOrderCard?: boolean;
 }
-
-// 模拟背景，建议后续移至独立文件
+//a static Components. use Tailwind animate-pulse to simulates the background being loaded
 const BackgroundMockup = () => (
   <div className="absolute inset-0 z-0 p-12 opacity-20 pointer-events-none select-none overflow-hidden">
     <div className="max-w-4xl mx-auto space-y-8">
@@ -36,40 +39,41 @@ const BackgroundMockup = () => (
   </div>
 );
 
-// 手机维修专用卡片组件
+//order card component.
 const OrderCard = () => (
   <div className="bg-white dark:bg-slate-900 border border-blue-100 dark:border-blue-900/50 rounded-xl p-3 flex items-center gap-3 mt-3 shadow-md">
     <div className="w-10 h-10 bg-blue-50 dark:bg-blue-900/30 rounded-lg flex items-center justify-center text-blue-600 shrink-0">
       <Wrench className="w-5 h-5" />
     </div>
     <div className="flex-1 overflow-hidden">
-      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">维修进度：已检测</p>
-      <p className="text-xs text-slate-800 dark:text-slate-100 font-bold">iPhone 屏幕更换</p>
+      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Repair process：Detected</p>
+      <p className="text-xs text-slate-800 dark:text-slate-100 font-bold">Screen Replacement</p>
       <div className="flex items-center gap-1 mt-0.5">
         <ShieldCheck className="w-3 h-3 text-emerald-500" />
-        <span className="text-[9px] text-emerald-500 font-medium">原厂品质保障</span>
+        <span className="text-[9px] text-emerald-500 font-medium">Quality Assurance</span>
       </div>
     </div>
     <button className="text-[10px] font-bold text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 px-3 py-1.5 border border-blue-200 dark:border-blue-800 rounded-lg transition-colors">
-      详情
+      more infromation
     </button>
   </div>
 );
 
 export default function App() {
-  const [isOpen, setIsOpen] = useState(true);
-  const [messages, setMessages] = useState<Message[]>([
-    {id: 'welcome',
+  const [isOpen, setIsOpen] = useState(true);//Boolean value to control the window open or close
+  const [messages, setMessages] = useState<Message[]>([ //Initial message from AI when the chat window opens and save all messages in the state
+    {
+      id: 'welcome',
       type: 'ai',
-      text: "Hi! How are you?",
-      timestamp: getNow()
+      text: "Hi! Can I help you?",
+      timestamp: getNow() //call the getNow function
     }
   ]);
-  const [inputValue, setInputValue] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
+  const [inputValue, setInputValue] = useState(''); //Bind the text in the input box
+  const [isTyping, setIsTyping] = useState(false); //Boolean value. when true, will show the "AI is typing" animation and prevent sending new messages.
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // 自动滚动到底部
+  // Automatically scroll to the bottom, whenever messages or isTyping changes, ensuring the latest message is always visible to the user.
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTo({
@@ -77,9 +81,11 @@ export default function App() {
         behavior: 'smooth'
       });
     }
-  }, [messages, isTyping]);
+  }, [messages, isTyping]); //Monitoring Target
+
+  // Function to handle sending messages.
 const handleSend = async () => {
-    if (!inputValue.trim() || isTyping) return;
+    if (!inputValue.trim() || isTyping) return; //if the input is empty or AI is still typing, do nothing
     const messageToSend = inputValue;
     const userMsg: Message = {
       id: Date.now().toString(),
@@ -88,36 +94,37 @@ const handleSend = async () => {
       timestamp: getNow()
     };
 
-    setMessages(prev => [...prev, userMsg]);
-    setInputValue('');
-    setIsTyping(true);
+    setMessages(prev => [...prev, userMsg]); //update the message state.
+    setInputValue(''); //clear the input box
+    setIsTyping(true); //set AI is typing to true, which will show the typing animation and prevent sending new messages until the response is received.
+
     try {
-      // 强制使用 127.0.0.1，这是最稳妥的本地 IP
+      // fetch backend API, send the user message and wait for the AI response
 const response = await fetch('http://127.0.0.1:5000/chat', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({ message: messageToSend }),
 });
-      if (!response.ok) {
-        throw new Error(`服务器响应错误: ${response.status}`);
+
+      if (!response.ok) { //if code is between 200 and 299, response.ok will be true, otherwise false. If the response is not ok, throw an error to be caught in the catch block.
+        throw new Error(`Server Error: ${response.status}`);
       }
 
-      // 在这里定义 data，确保它在 try 块的作用域内
+      // defind data type for the response from backend, which contains the AI reply and whether to show the repair card
       const data = await response.json();
       const aiMsg: Message = {
         id: (Date.now() + 1).toString(),
         type: 'ai',
-        text: data.reply || "抱歉，我暂时无法回答这个问题。",
+        text: data.reply || "Sorry, I'm not sure how to help with that. Please try contacting our human support team.",
         timestamp: getNow(),
         hasOrderCard: data.show_repair_card === true
       };
       setMessages(prev => [...prev, aiMsg]);
     } catch (error) {
-      console.error("连接失败详细原因:", error); // 这行会在浏览器 F12 里打印具体原因
       setMessages(prev => [...prev, {
           id: 'error',
           type: 'ai',
-          text: "系统连接失败，请检查维修店后台是否在线。",
+          text: "System connection failed, please check if the repair shop backend is online.",
           timestamp: "Error"
       }]);
     } finally {
@@ -125,12 +132,13 @@ const response = await fetch('http://127.0.0.1:5000/chat', {
     }
   };
 
+  // The main return statement of the App component, which renders the chat interface. It conditionally renders either the chat window or the launcher button based on the isOpen state.
   return (
     <div className="min-h-screen bg-slate-100 dark:bg-slate-950 font-sans text-slate-900 dark:text-slate-100 relative overflow-hidden">
       <BackgroundMockup />
       <AnimatePresence>
-        {isOpen ? (
-          <motion.div
+        {isOpen ? ( // If isOpen is true, render the chat window, otherwise render the launcher button
+          <motion.div // main chat window 
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
@@ -159,6 +167,7 @@ const response = await fetch('http://127.0.0.1:5000/chat', {
                 </button>
               </div>
             </header>
+
             {/* Message Stream */}
             <div ref={scrollRef} className="flex-1 overflow-y-auto p-5 space-y-6 scrollbar-hide">
               {messages.map((msg) => (
@@ -175,7 +184,8 @@ const response = await fetch('http://127.0.0.1:5000/chat', {
                     {msg.type === 'user' ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
                   </div>
                   <div className={cn("space-y-1", msg.type === 'user' && "text-right")}>
-                    <div className={cn("p-3 rounded-2xl text-xs leading-relaxed shadow-sm border",
+                    <div className={cn(
+                      "p-3 rounded-2xl text-xs leading-relaxed shadow-sm border",
                       msg.type === 'user'
                         ? "bg-blue-600 text-white border-transparent rounded-tr-none"
                         : "bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700 rounded-tl-none"
@@ -214,7 +224,7 @@ const response = await fetch('http://127.0.0.1:5000/chat', {
                       }
                     }}
                     className="w-full pr-12 pl-4 py-3 bg-slate-50 dark:bg-slate-800 border-none rounded-xl text-xs focus:ring-2 focus:ring-blue-500/20 resize-none transition-all placeholder:text-slate-400"
-                    placeholder="咨询维修价格或二手机行情..."
+                    placeholder="Please enter your message here..."
                     rows={1}
                   />
                   <button onClick={handleSend} className="absolute right-2 w-8 h-8 bg-blue-500 text-white rounded-lg hover:bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
