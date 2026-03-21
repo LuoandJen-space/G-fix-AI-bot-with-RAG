@@ -151,10 +151,10 @@ const response = await fetch('http://127.0.0.1:5000/chat', {
                   <Smartphone className="w-6 h-6" />
                 </div>
                 <div>
-                  <h2 className="text-sm font-bold text-slate-800 dark:text-white leading-tight">FixIt 维修助手</h2>
+                  <h2 className="text-sm font-bold text-slate-800 dark:text-white leading-tight">G-Fix Solution</h2>
                   <div className="flex items-center gap-1.5 mt-0.5">
                     <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                    <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wider">专业在线</p>
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wider">Your Professional Personal AI Assistant</p>
                   </div>
                 </div>
               </div>
