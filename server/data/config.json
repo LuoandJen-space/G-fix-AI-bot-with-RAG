@@ -1,0 +1,29 @@
+{
+    "metadata": {
+        "version": "2026.03.25",
+        "currency": "NZD",
+        "depreciation_rate": 0.15
+    },
+    "stores":[
+        {
+            "id": "S1",
+            "name": "G-Fix Solution, Northshore",
+            "address": "123 Main Street, Northshore",
+            "url": "http://localhost:3000/store1"
+        },
+        {
+            "id": "S2",
+            "name": "G-Fix Solution, City Center",
+            "address": "456 Oak Avenue, City Center",
+            "url": "http://localhost:3000/store2"
+        }
+    ],
+    "pricing_table": {
+        "Apple":{
+        "iPhone 12": {"screen" :500, "battery": 200, "camera": 300, "launch_year": 2020},
+        "iPhone 12 Pro": {"screen" :700, "battery": 250, "camera": 400, "launch_year": 2020},
+        "iPhone 13": {"screen" :600, "battery": 220, "camera": 350, "launch_year": 2021},
+        "iPhone 13 Pro": {"screen" :800, "battery": 280, "camera": 450, "launch_year": 2021}
+        }
+    }
+}

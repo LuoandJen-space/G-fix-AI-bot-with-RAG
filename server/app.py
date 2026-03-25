@@ -52,6 +52,10 @@ def chat():
             max_tokens=1024,
             stream=False #do not use streaming responses for simplicity
         )
+        #completion response contains whole replay
+        #.choies[0] is choose the firsr ai response
+        #.message Get the reply object containing the character and content
+        #.content only get the text content of the reply
         reply = completion.choices[0].message.content
         
         # key words trigger to show repair card
