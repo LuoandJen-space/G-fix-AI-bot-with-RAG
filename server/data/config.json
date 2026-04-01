@@ -1,19 +1,20 @@
 {
     "metadata": {
         "version": "2026.03.25",
-        "currency": "NZD",
         "depreciation_rate": 0.15
     },
     "stores":[
         {
             "id": "S1",
             "name": "G-Fix Solution, Northshore",
+            "time": "Mon-Sat 9am-6pm, Sun Closed",
             "address": "123 Main Street, Northshore",
             "url": "http://localhost:3000/store1"
         },
         {
             "id": "S2",
             "name": "G-Fix Solution, City Center",
+            "time": "Mon-Sat 9am-6pm, Sun Closed",
             "address": "456 Oak Avenue, City Center",
             "url": "http://localhost:3000/store2"
         }

@@ -6,6 +6,7 @@ import { User, Bot } from 'lucide-react';
 import { cn } from '../../lib/utils'; 
 import { Message } from '../types/chat';
 import { OrderCard } from './OrderCard';
+import ReactMarkdown from 'react-markdown';
 
 interface ChatMessageProps {
   msg: Message;
@@ -34,7 +35,9 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ msg }) => {
             ? "bg-blue-600 text-white border-transparent rounded-tr-none"
             : "bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700 rounded-tl-none"
         )}>
-          <p>{msg.text}</p>
+          <div className={cn("markdown-content", msg.type === 'user' ? "text-white" : "text-slate-800 dark:text-slate-200")}>
+            <ReactMarkdown>{msg.text}</ReactMarkdown>
+              </div>
           {msg.hasOrderCard && <OrderCard />}
         </div>
         <p className="text-[9px] text-slate-400 px-1">{msg.timestamp}</p>
