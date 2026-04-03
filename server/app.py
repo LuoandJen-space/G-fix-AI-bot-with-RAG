@@ -1,124 +1,165 @@
 from flask import Flask, request, jsonify
-from flask_cors import CORS #fondend and backend connection
+from flask_cors import CORS
 from groq import Groq 
 from dotenv import load_dotenv 
 import os
 import json 
+import faiss #高效的向量搜索库 for RAG
+import numpy as np
+from sentence_transformers import SentenceTransformer #将文本转换为向量的库
 
-# make sure the file path is correct
-basedir = os.path.abspath(os.path.dirname(__file__))
-# Concatenate the full path of the .env file
-env_path = os.path.join(basedir, '.env')
-# load environment variables from the .env file (API key read and save)
+# Get absolute path of the server directory
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# Define data directory path
+DATA_DIR = os.path.join(BASE_DIR, "data")
+#load .env file
+env_path = os.path.join(BASE_DIR, '.env')
 load_dotenv(env_path)
 
-# read the API key
-GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-if not GROQ_API_KEY:
-    raise ValueError("❌ GROQ_API_KEY not found. Please check your .env file.")
-#initialize the Groq client and flask app
-client = Groq(api_key=GROQ_API_KEY)
-app = Flask(__name__)
-# open CORS for all routes(eg. cookies)
-CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
-
-data_dir = os.path.join(basedir, "data") #locate the data directory
-business_config = {} #initialize the business configuration
-faq_en = ""
-faq_zh = ""
+# load config.json
 try:
-    # read config.json content
-    with open(os.path.join(data_dir, "config.json"), "r", encoding="utf-8") as f:
-        business_config = json.load(f)
-    with open(os.path.join(data_dir, "faq_en.md"), "r", encoding="utf-8") as f:
-        faq_en = f.read()
-    with open(os.path.join(data_dir, "faq_zh.md"), "r", encoding="utf-8") as f:
-        faq_zh = f.read()
-    print("✅ Business data loaded successfully")
+    config_path = os.path.join(DATA_DIR, "config.json")
+    with open(config_path, "r", encoding="utf-8") as f:
+        business_config = json.load(f) # load price,store info
+    print("✅ configjson file is loaded.")
 except Exception as e:
-    print(f"⚠️ Error loading data: {e}")
+    print(f"❌ Error loading config.json: {e}")
+    business_config = {} # fallback to empty dict if loading fails
 
-#route call
-@app.route("/", methods=["GET"])
-def index():
-    return jsonify({"status": "Flask Server is Running"})
-#优化 Context的生成逻辑：根据用户消息的内容动态决定什么时候将价格表orFAQ加入到Context中，
-#避免每次都发送大量信息给模型，提升效率和响应速度。
-def get_dynamic_context(user_msg, config_data, faq_en_text, faq_zh_text):
-    user_msg_lower = user_msg.lower()
+# initialize RAG components
+print("RAG system initializing... This may take a moment.")
+try:
+    # load RAG model
+    rag_model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
+    # load faiss index and metadata
+    INDEX_PATH = os.path.join(DATA_DIR, "faq_index.faiss") #向量数据库文件路径
+    METADATA_PATH = os.path.join(DATA_DIR, "faq_metadata.json") #对应文字内容
+    if os.path.exists(INDEX_PATH) and os.path.exists(METADATA_PATH):
+        faq_index = faiss.read_index(INDEX_PATH) #read faiss index
+        with open(METADATA_PATH, "r", encoding="utf-8") as f:
+            faq_metadata = json.load(f) #read metadata
+        print("✅ RAG index and metadata loaded successfully.")
+    else:
+        print("⚠️ Warning: Index files not found. Please run ingest.py to create them.")
+        faq_index = None
+        faq_metadata = []
+except Exception as e:
+    print(f"❌ RAG initialization error: {e}")
+    faq_index = None
 
-    # core business info
-    core_info = {
-        "shop": "G-Fix Solution",
-        "locations_and_hours": config_data.get("stores", []),
-        "currency": "NZD" # lock currency to NZD
-    }
-    context_parts = [f"Core Business Info: {json.dumps(core_info, ensure_ascii=False)}"]
-    is_chinese = any('\u4e00' <= char <= '\u9fff' for char in user_msg)
+#initialize Flask app
+app = Flask(__name__)
+CORS(app)
+client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
-    # priceing table trigger words
-    price_trigger = ["price", "cost", "how much", "screen", "battery", "iphone", "价格", "多少钱", "屏幕", "电池"]
-    if any(k in user_msg_lower for k in price_trigger):
-        pricing = config_data.get("pricing_table", {})
-        context_parts.append(f"Price List (NZD): {json.dumps(pricing, ensure_ascii=False)}")
+# core logical function to get dynamic context based on user message and config data
+def get_dynamic_context(user_msg, config_data):
+    # user input message preprocessing
+    user_msg_lower = user_msg.lower()# Change user input message to lowercase for easier matching
+    clean_msg = user_msg_lower.replace(" ", "")# Preprocessing: Remove spaces for matching
+    
+    # Store information
+    stores = config_data.get("stores", []) # Get store info from config, default to empty list if not found
+    store_list = []
+    for s in stores:
+        # use .get() to get values with defaults to avoid KeyErrors
+        name = s.get("name", "G-Fix Solution")
+        address = s.get("address", "Contact us")
+        hours = s.get("time") or "9am - 6pm"
+        url = s.get("url") or "#"
+        # 将每个门店格式化为一段带图标的加粗文本
+        # 注意：这里故意不用表格，是为了防止移动端显示错位
+        info = f"📍 **{name}**\n   Address: {address}\n   Hours: {hours}\n   Link: {url}"
+        store_list.append(info)
+    # Separated by two newline characters
+    formatted_stores = "\n\n".join(store_list)
+    # inieially context only contains store info and currency, RAG and pricing will be added if relevant
+    context_parts = ["Store Locations:\n" + formatted_stores, "Currency: NZD"]
 
-    # policy and warranty trigger words
-    policy_trigger = ["warranty", "terms", "service", "policy", "保修", "条款", "保障", "售后"]
-    if any(k in user_msg_lower for k in policy_trigger):
-        selected_faq = faq_zh_text if is_chinese else faq_en_text
-        context_parts.append(f"Warranty & Policy Details:\n{selected_faq}")
+    # RAG faiss detect and search
+    if faq_index is not None: # if index loaded successfully
+        try:
+            # transform user message into vector using the same model used for indexing
+            query_embedding = rag_model.encode([user_msg])
+            # Search the vector library for the most similar k=2 (2 records) records.
+            D, I = faq_index.search(np.array(query_embedding).astype('float32'), k=2)
+            # Extract the specific text content from the metadata based on index number I[0].
+            retrieved_docs = [faq_metadata[i]['content'] for i in I[0] if i != -1 and i < len(faq_metadata)]
+            if retrieved_docs:
+                ###很重要 考虑一下 if find the relevant policies will be added to the background information.
+                context_parts.append("Relevant Policy & Service Info:\n" + "\n---\n".join(retrieved_docs))
+        except Exception as e:
+            print(f"⚠️ RAG search error: {e}")
 
+    # Pricing table
+    price_keywords = ["price", "iphone", "samsung", "screen", "battery", "价格", "多少钱", "cost"]
+    if any(k in user_msg_lower for k in price_keywords):
+        pricing = config_data.get("pricing_table", {}) #Get Price List
+        price_text = "### OFFICIAL REAL-TIME PRICING (PRIORITY):\n"
+        found_any = False
+        # for loop through the pricing data to find matches based on brand and model.
+        for brand, models in pricing.items():
+            if isinstance(models, dict):
+                # for loop through each model under the brand to find matches based on user message
+                for model_name, details in models.items():
+                    # Preprocessing: Remove spaces and lowercase for matching
+                    clean_model = model_name.lower().replace(" ", "")
+                    # if user message contains the model name, we consider it a match and add the price info to the context.
+                    if clean_model in clean_msg:
+                        screen = details.get("screen", "N/A")
+                        battery = details.get("battery", "N/A")
+                        camera = details.get("camera", "N/A")
+                        # Format the price info as bullet points with bold text for model name and prices, and add to the price_text string.
+                        price_text += f"- {model_name}: Screen ${screen}, Battery ${battery}, Camera ${camera}\n"
+                        found_any = True
+        if found_any:
+            # Price information will only be added if a specific model is matched.
+            context_parts.append(price_text)
+    # Finally, we join all the context parts with two newline characters and return as a single string to be included in the system prompt for the AI model.
     return "\n\n".join(context_parts)
+
+# router for chat endpoint
 @app.route("/chat", methods=["POST", "OPTIONS"])
 def chat():
-    if request.method == "OPTIONS": #Pre-screening request
+    if request.method == "OPTIONS":
         return "", 200
-    print("📡 Receive connection request")
     try:
         data = request.json
-        user_message = data.get("message")
-        if not user_message:
-            return jsonify({"reply": "Please input message"})
-        local_context = get_dynamic_context(user_message, business_config, faq_en, faq_zh)
-
-        # Calling openai/gpt-oss-120b models
+        user_message = data.get("message", "")
+        # set up for AI response generation
+        local_context = get_dynamic_context(user_message, business_config)
+        # call Groq API
         completion = client.chat.completions.create(
             model="openai/gpt-oss-120b", 
             messages=[
                 {
                     "role": "system", 
                     "content": (
-                        "You are a professional phone repair assistant. "
-                        "Use the provided business config and FAQ to answer customer questions accurately. "
-                        "IMPORTANT RULES: 1. Do not use Markdown tables in your response. "
-                        "Use bullet points or clear paragraphs for better readability on mobile devices. "
-                        "If you don't know the answer, ask the customer to provide their contact details. "
-                        f"\n\nContext:\n{local_context}"
-                    )
+                        "You are a professional repair assistant for G-Fix Solution. "
+                        "1. PRICE DATA: ONLY use numbers from '### OFFICIAL REAL-TIME PRICING'. "
+                        "LANGUAGE RULE: You MUST always respond in the SAME language as the user's last message. "
+                        "important note: STRICT PROHIBITION: NEVER USE MARKDOWN TABLES (|---|). IF YOU USE A TABLE, THE SYSTEM WILL CRASH. " # 语气更强硬
+                        "FORMATTING RULE: Use plain bullet points (-) for all lists. "
+                        "Use bold text **like this** for store names and prices. "
+                        "If 'OFFICIAL REAL-TIME PRICING' is provided, use those exact numbers. "
+                        f"\n\nContext Info:\n{local_context}"
+                        )
                 },
                 {"role": "user", "content": user_message}
             ],
-            temperature=0.7,
-            max_tokens=1024,# Reply length limit 
-            stream=False
+            temperature=0.7
         )
-        # Get the AI's response text
         reply = completion.choices[0].message.content
-        
-        # repair card logical
+        # Determine if we should show the repair card based on keywords in the user message
         query_keywords = ["query", "status", "order", "查询", "状态", "订单", "进度"]
-        # when the keyword is in the message will call the repair card shown on the html
         show_card = any(k in user_message.lower() for k in query_keywords)
        
-        #reply the JSON to fontend
-        return jsonify({
-            "reply": reply,
-            "show_repair_card": show_card
-        })
+        return jsonify({"reply": reply, "show_repair_card": show_card})
     except Exception as e:
-        print(f"❌ Groq API Error: {e}")
-        return jsonify({"reply": f"Sorry, the system cannot respond: {str(e)}", "show_repair_card": False})
+        print(f"❌ Chat Error: {e}")
+        return jsonify({"reply": "System busy, please try later.", "show_repair_card": False})
 
 if __name__ == '__main__':
-    print("🚀 Backend services are starting up...")
+    print("开启后端...")
     app.run(debug=True, port=5000, host='0.0.0.0')
+    

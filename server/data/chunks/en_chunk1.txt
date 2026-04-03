@@ -1,0 +1,5 @@
+## 1. Warranty Exclusions
+- **Physical and Water Damage:** 
+- Physical damage (e.g., broken screens, bent devices) and water damage are **NOT** covered by the warranty.
+    - If a device is received with pre-existing physical damage, the warranty is void.
+- **Third-Party Repairs:** - Any unauthorized repairs or tampering by third parties without prior agreement from G-Fix Solution will **invalidate** the warranty.

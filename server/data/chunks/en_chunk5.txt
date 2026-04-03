@@ -1,0 +1,5 @@
+## 5. Device Submission Requirements (Receiving Phones)
+- **Proof of Purchase:** An original receipt may be required.
+- **Lock Status:** We do **NOT** accept devices locked to a specific carrier or those with activation locks (e.g., iCloud/Google lock).
+- **Accounts & Passwords:** - All existing accounts must be logged out. 
+    - **All passwords and screen locks MUST be removed** before submission to allow our technicians access for testing.

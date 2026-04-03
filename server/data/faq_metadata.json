@@ -1,0 +1,22 @@
+[
+  {
+    "filename": "en_chunk1.txt",
+    "content": "## 1. Warranty Exclusions\n- **Physical and Water Damage:** \n- Physical damage (e.g., broken screens, bent devices) and water damage are **NOT** covered by the warranty.\n    - If a device is received with pre-existing physical damage, the warranty is void.\n- **Third-Party Repairs:** - Any unauthorized repairs or tampering by third parties without prior agreement from G-Fix Solution will **invalidate** the warranty."
+  },
+  {
+    "filename": "en_chunk2.txt",
+    "content": "## 2. Repair, Replace, and Refund Policy\n- **Service Hierarchy:** \n- Our priority is to **Repair** first. If a repair is not possible, we will **Replace** the device. If a replacement is unavailable, a **Full Refund** will be issued.\n- **Change of Mind:** G-Fix Solution reserves the right to **refuse a refund** if the customer simply changes their mind.\n- **Restocking Fee:** All eligible non-defective returns are subject to a **15% restocking fee**."
+  },
+  {
+    "filename": "en_chunk3.txt",
+    "content": "## 3. NZ Consumer Guarantees Act (CGA)\n- We comply with the **Consumer Guarantees Act 1993**. \n- Customers are entitled to a remedy (repair, replacement, or refund) if goods fail to meet guarantees.\n- For \"substantial\" failures, you may reject the goods and choose a replacement or refund.\n- Rights under the CGA are not limited by a fixed time but depend on the nature and price of the product."
+  },
+  {
+    "filename": "en_chunk4.txt",
+    "content": "## 4. Shipping and Returns Details\n- **Delivery Damage:** If an order arrives damaged, notice must be sent within **3 days** for a free replacement.\n- **Return Period:** Returns must be made within **7 days**.\n- **Return Costs:** Products must be sent back at the **\"Buyer's Expense\"**. All courier and postage charges are non-refundable.\n- **Condition:** Items must be in **re-sellable condition** to qualify for a refund.\n- **Deposits & Layby:** Deposits are non-refundable. Cancellations of layby will result in deductions for loss in value."
+  },
+  {
+    "filename": "en_chunk5.txt",
+    "content": "## 5. Device Submission Requirements (Receiving Phones)\n- **Proof of Purchase:** An original receipt may be required.\n- **Lock Status:** We do **NOT** accept devices locked to a specific carrier or those with activation locks (e.g., iCloud/Google lock).\n- **Accounts & Passwords:** - All existing accounts must be logged out. \n    - **All passwords and screen locks MUST be removed** before submission to allow our technicians access for testing."
+  }
+]
