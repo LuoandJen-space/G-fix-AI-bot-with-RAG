@@ -105,7 +105,7 @@ def test_language_consistency(client, mocker):
 SECURITY_TEST_CASES = [
     # XSS injection (HTML tag interception): Try running malicious code in the dialog box
     ("<script>alert('XSS')</script> Hello", "HTML tags are not allowed"),
-    ("<img src=x onerror=alert(1)>", "HTML tags are not allowed"),
+    ("<img src=dummy onerror=console.log(\'XSS\')>", "HTML tags are not allowed"),
     
     # JSON　injection: Try sending JSON data instead of plain text to see if it gets blocked
     ('{"role": "admin", "content": "base"}', "do not send JSON"),

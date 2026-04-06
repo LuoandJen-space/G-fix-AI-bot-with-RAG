@@ -1,0 +1,20 @@
+.env
+__pycache__/
+*/__pycache__/*
+*.log
+.venv/
+venv/
+ENV/
+
+# test
+*.html
+.pytest_cache/
+.coverage
+full_report.html
+
+# RAG faiss
+data/faq_index.faiss
+# chunks
+data/chunks/
+
+node_modules/
