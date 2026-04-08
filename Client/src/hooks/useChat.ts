@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Message, ChatResponse } from '../components/types/chat'; 
 import { getNow } from '../lib/utils';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000';
+
 export const useChat = () => {
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -28,7 +30,7 @@ export const useChat = () => {
 
     try {
       // fetch response from the backend API
-      const response = await fetch('http://127.0.0.1:5000/chat', {
+      const response = await fetch(`${API_BASE_URL}/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: text }),
@@ -45,6 +47,7 @@ export const useChat = () => {
       };
       setMessages(prev => [...prev, aiMsg]);
     } catch (error) {
+      console.error("Connection error:", error);
       setMessages(prev => [...prev, {
         id: 'error',
         type: 'ai',

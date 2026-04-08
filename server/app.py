@@ -199,6 +199,7 @@ def chat():
         return jsonify({"reply": "System busy, please try later.", "show_repair_card": False})
 
 if __name__ == '__main__':
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
     print("开启后端...")
-    app.run(debug=True, port=5000, host='0.0.0.0')
     

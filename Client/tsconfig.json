@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "types": ["vite/client"],
     "target": "ES2022",
     "experimentalDecorators": true,
     "useDefineForClassFields": false,
@@ -23,4 +24,5 @@
     "allowImportingTsExtensions": true,
     "noEmit": true
   }
+  
 }
