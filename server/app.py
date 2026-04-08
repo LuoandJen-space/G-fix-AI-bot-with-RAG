@@ -39,7 +39,7 @@ def init_rag_system():
     try:
         # load RAG model
         #rag_model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
-        rag_model = SentenceTransformer('paraphrase-multilingual-MiniLM-L3-v2')
+        rag_model = SentenceTransformer('sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2')
         # load faiss index and metadata
         if os.path.exists(INDEX_PATH) and os.path.exists(METADATA_PATH):#向量数据库文件路径
             faq_index = faiss.read_index(INDEX_PATH) #read faiss index
@@ -200,7 +200,7 @@ def chat():
         return jsonify({"reply": "System busy, please try later.", "show_repair_card": False})
 
 if __name__ == '__main__':
+    print("开启后端...")
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
-    print("开启后端...")
     
