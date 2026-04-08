@@ -38,7 +38,8 @@ def init_rag_system():
     print("RAG system initializing... This may take a moment.")
     try:
         # load RAG model
-        rag_model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
+        #rag_model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
+        rag_model = SentenceTransformer('paraphrase-multilingual-MiniLM-L3-v2')
         # load faiss index and metadata
         if os.path.exists(INDEX_PATH) and os.path.exists(METADATA_PATH):#向量数据库文件路径
             faq_index = faiss.read_index(INDEX_PATH) #read faiss index
